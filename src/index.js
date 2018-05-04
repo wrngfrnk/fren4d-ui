@@ -20,10 +20,17 @@ class PixelRow extends React.Component {
     // TODO: Be consistent with (x, y) vs (y, x)
     constructor(props) {
         super(props);
-        this.clickHandler = this.clickHandler.bind(this);
         this.state = {
-            binaryValue: this.props.bin,
+            bin: this.props.bin
         }
+    }
+
+    updateRow(x, y, active) {
+        let newBin = this.dec2bin(this.props.bin);
+        newBin[x] = active ? 1 : 0;
+        let dec = this.bin2dec(newBin);
+
+        this.props.clickHandler(x, y, dec);
     }
 
     dec2bin(dec = 0) {
@@ -38,58 +45,77 @@ class PixelRow extends React.Component {
         return parseInt(dec, 2); 
     }
 
-    clickHandler(e, x, y, active) {
-        let oldBinaryValue = this.dec2bin(this.state.binaryValue);  // TODO: Reduxify to store this state
-        oldBinaryValue[x] = (active ? 1 : 0);
-        let newBinaryValue = oldBinaryValue;                        // TODO: Not like this
-
-        this.setState({
-            binaryValue: this.bin2dec(newBinaryValue),
-        });
-    }
-
     getCurrentPixelActive(x) {
-        return this.dec2bin(this.state.binaryValue)[x] === 1;
+        return this.dec2bin(this.props.bin)[x] === 1;
     }
 
     renderPixel(y, x, active) {
-        return <Pixel key={"pixel" + y + "" + x} x={x} y={y} active={active} action={e => this.clickHandler(e, x, y, !active)}/>;
-    }
+        return <Pixel key={"pixel" + y + "" + x} x={x} y={y} active={ active } action={e => this.updateRow(x, y, !active)} />;
+    } 
 
     render() {
         const cols = 8
         
-
         return (
             <div>
                 {Array.from(Array(cols).keys()).map((x) => 
                     this.renderPixel(this.props.y, x, this.getCurrentPixelActive(x))
                 )}
-                {this.state.binaryValue}
+                {this.props.bin}
             </div>
         );
-    }    
+    }
 }
 
 class Frame extends React.Component {
     constructor(props) {
         super(props);
-        /* let loadedFrame = loadASavedFrameOrSomething;*/
+        this.controlActions = this.controlActions.bind(this);
+        this.clickHandler = this.clickHandler.bind(this);
+
         this.state = {
             pixelRows: Array(8).fill(0), 
         }
     }
 
-    getRowBinaryValue(row) {
-
-    }
-
     renderControls() {
-        return <FrameControls />;
+        return <FrameControls actions={this.controlActions(this.state.pixelRows)} />;
     }
 
-   renderDebug(frame) {
+    renderDebug(frame) {
         return <FrameDebug frameData={frame} />;
+    }
+
+    controlActions(...args) {
+        let argArray = Array.from(args); // ...in case we ever need to be able to handle several arguments
+
+        let undo = ()       => { return this.setState({pixelRows: this.state.pixelRows}); } // TODO: get previous state (redux)
+        let flipX = ()      => { return args[0] }
+        let flipY = ()      => { return args[0]; }
+        let invert = ()     => { return ~args[0]; }
+        let mirrorX = ()    => { return args[0]; }
+        let mirrorY = ()    => { return args[0]; }
+        let clear = ()      => { return this.setState({pixelRows: Array(8).fill(0)}); }
+
+
+        return {
+            undo: undo,
+            flipX: flipX,
+            flipY: flipY,
+            invert: invert,
+            mirrorX: mirrorX,
+            mirrorY: mirrorY,
+            clear: clear,
+        }
+    }
+
+    clickHandler(e, y, dec) {
+        let newRows = this.state.pixelRows;
+        newRows[y] = dec;
+
+        this.setState({
+            pixelRows: newRows,
+        });
     }
 
     render() {
@@ -102,7 +128,7 @@ class Frame extends React.Component {
                 </div>
                 <div className="frame-container">
                     {Array.from(Array(rows).keys()).map((i) =>
-                        <PixelRow y={i} bin={this.state.pixelRows[i]} key={"row" + i} />
+                        <PixelRow y={i} clickHandler={this.clickHandler} bin={this.state.pixelRows[i]} key={"row" + i} />
                     )}
                 </div>
                 <div className="frame-timeline">
@@ -117,8 +143,8 @@ class Frame extends React.Component {
 }
 
 class FrameControls extends React.Component {
-    constructor() {
-        super()
+    constructor(props) {
+        super(props)
         this.state = {
             frameTime: 0
         }
@@ -132,13 +158,12 @@ class FrameControls extends React.Component {
                     <button>Next frame</button>
                 </div>
                 <div className="frame-control-group">
-                    <button>Undo</button>
-                    <button>Clear</button>
-                    <button>Flip x</button>
-                    <button>Flip y</button>
-                    <button>Mirror x</button>
-                    <button>Mirror y</button>
-                    <button>Invert</button>
+                    {Object.keys(this.props.actions).map(a => {
+                        // Output buttons for all the actions from the bound function handler
+                        return <button key={"action-" + a} onClick={this.props.actions[a]}>{a}</button>
+                        })
+                    }
+                    
                 </div>
                 <div className="frame-control-group">
                     Frame time <input type="range" min="0" max="30000" step="10" id="frameTime" onChange={e => this.setState({frameTime: e.target.value})} /> {this.state.frameTime} ms
