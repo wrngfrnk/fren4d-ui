@@ -87,25 +87,74 @@ class Frame extends React.Component {
     }
 
     controlActions(...args) {
-        let argArray = Array.from(args); // ...in case we ever need to be able to handle several arguments
+        // TODO: Make it use the argument instead of current state, allowing for manipulation of single rows/cols
 
-        let undo = ()       => { return this.setState({pixelRows: this.state.pixelRows}); } // TODO: get previous state (redux)
-        let flipX = ()      => { return args[0] }
-        let flipY = ()      => { return args[0]; }
-        let invert = ()     => { return ~args[0]; }
+        let undo = ()       => { return; } // TODO: Use prevstate (and do anything at all )
+        let flipX = ()      => { return; }
+        let flipY = ()      => { return; }
+        
+        let invert = ()     => { return; }
+        
         let mirrorX = ()    => { return args[0]; }
         let mirrorY = ()    => { return args[0]; }
-        let clear = ()      => { return this.setState({pixelRows: Array(8).fill(0)}); }
+        
+        let clear = ()      => { return apply(Array(8).fill(0)); } // here too
 
+        let shiftUp = ()    => { 
+            let newRows = [...this.state.pixelRows.slice(1,8), this.state.pixelRows[0]];
+            apply(newRows)
+        }
+
+        let shiftDown = ()    => {
+            let newRows = [this.state.pixelRows[7], ...this.state.pixelRows.slice(0,7)];
+            apply(newRows)
+        }
+
+        let shiftRight = ()    => {
+            let newRows = this.state.pixelRows.map(row => {
+                // Shifting 00001001 right would result in 00000100. This is a problem, because we want the pixels to "wrap around" when shifting them out of bounds.
+                // However, the last bit being 1 means that the decimal value is odd. Thus, we can simply add 128 to the resulting value when one bit is pushed out.
+
+                return parseInt(row % 2 === 1 ? (row >> 1) + 128 : row >> 1, 10) 
+            });
+
+            apply(newRows);
+        }
+
+        let shiftLeft = ()    => { 
+            // Here we kind of have the same problem as the right shift. Bits shifted off to the left will overflow the value (> 255).
+            // To solve this, we can use the fact that all values >= 128 means that the first bit is 1. So, if the first bit is 1, remove 128 (i.e. setting it to 0) and then shift them.
+            // Then add 1 to the shifted value to set the last bit to 1, thus effectively wrapping the bits around!
+
+            let newRows = this.state.pixelRows.map(row => {
+                return (row >= 128 ? ((row - 128) << 1) + 1: row << 1)
+            });
+
+            apply(newRows) 
+        }
+
+        const apply = (newRows) => {
+            return this.setState(prevState => ({
+                pixelRows: newRows
+            }));
+        }
 
         return {
-            undo: undo,
-            flipX: flipX,
-            flipY: flipY,
-            invert: invert,
-            mirrorX: mirrorX,
-            mirrorY: mirrorY,
-            clear: clear,
+            modify: {
+                undo: undo,
+                flipX: flipX,
+                flipY: flipY,
+                invert: invert,
+                mirrorX: mirrorX,
+                mirrorY: mirrorY,
+                clear: clear,
+            },
+            shift: {
+                up: shiftUp,
+                right: shiftRight,
+                down: shiftDown,
+                left: shiftLeft,
+            }
         }
     }
 
@@ -113,9 +162,9 @@ class Frame extends React.Component {
         let newRows = this.state.pixelRows;
         newRows[y] = dec;
 
-        this.setState({
+        this.setState(prevState => ({
             pixelRows: newRows,
-        });
+        }));
     }
 
     render() {
@@ -156,19 +205,37 @@ class FrameControls extends React.Component {
                 <div className="frame-control-group">
                     <button>Previous frame</button>
                     <button>Next frame</button>
+                    <button>Duplicate last frame</button>
+                    <button>Preview</button>
                 </div>
                 <div className="frame-control-group">
-                    {Object.keys(this.props.actions).map(a => {
+                    {Object.keys(this.props.actions.modify).map(a => {
                         // Output buttons for all the actions from the bound function handler
-                        return <button key={"action-" + a} onClick={this.props.actions[a]}>{a}</button>
+                        return <button key={"action-" + a} onClick={this.props.actions.modify[a]}>{a}</button>
                         })
                     }
-                    
                 </div>
                 <div className="frame-control-group">
                     Frame time <input type="range" min="0" max="30000" step="10" id="frameTime" onChange={e => this.setState({frameTime: e.target.value})} /> {this.state.frameTime} ms
                 </div>
+                <div className="frame-control-group frame-shift">
+                    {Object.keys(this.props.actions.shift).map(d => {
+                        return <FrameShifter key={"shift-" + d} dir={d} action={this.props.actions.shift[d]} />
+                        })
+                    }
+                    
+                </div>
             </div>
+        );
+    }
+}
+
+class FrameShifter extends React.Component {
+    render() {
+        return (
+            <button className={"frame-shift-" + this.props.dir} onClick={this.props.action}>
+                Shift {this.props.dir}
+            </button>
         );
     }
 }
