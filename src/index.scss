@@ -29,8 +29,6 @@ $mobile: "768px";
 }
 
 #frame-main {
-    min-width: 900px;
-
     @include breakpoint($mobile) {
         width: 100%;
     }
@@ -45,5 +43,14 @@ $mobile: "768px";
 
     &.active {
         background: orange;
+    }
+}
+.frame-control-group {
+    &.frame-shift {
+        position: relative; 
+
+        button {
+            
+        }
     }
 }

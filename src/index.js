@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
+import { bin2dec, dec2bin } from './helpers.js'
 
 // TODO: Separate into different files per class if necessary
 // TODO: Use a Sass loader w/ webpack to directly deal with the sass files
@@ -20,6 +21,8 @@ class PixelRow extends React.Component {
     // TODO: Be consistent with (x, y) vs (y, x)
     constructor(props) {
         super(props);
+        this.bin2dec = bin2dec.bind(this)
+        this.dec2bin = dec2bin.bind(this)
         this.state = {
             bin: this.props.bin
         }
@@ -31,18 +34,6 @@ class PixelRow extends React.Component {
         let dec = this.bin2dec(newBin);
 
         this.props.clickHandler(x, y, dec);
-    }
-
-    dec2bin(dec = 0) {
-        // Return zero padded binary value of 0 to 255 as array of ints
-        let bin = (dec > 255 ? 255 : dec).toString(2);
-        return Array.from("00000000".substr(bin.length) + bin).map(val => parseInt(val, 10));
-    }
-
-    bin2dec(bin = Array(8).fill(0)) {
-        // Return decimal representation of binary array as int
-        let dec = Array.from(bin).join(''); // Convert the argument to an actual array, because we cannot call join() on arguments (the argument object is not an array)
-        return parseInt(dec, 2); 
     }
 
     getCurrentPixelActive(x) {
@@ -72,42 +63,81 @@ class Frame extends React.Component {
         super(props);
         this.controlActions = this.controlActions.bind(this);
         this.clickHandler = this.clickHandler.bind(this);
+        this.bin2dec = bin2dec.bind(this);
+        this.dec2bin = dec2bin.bind(this);
 
         this.state = {
             pixelRows: Array(8).fill(0), 
         }
     }
 
-    renderControls() {
-        return <FrameControls actions={this.controlActions(this.state.pixelRows)} />;
-    }
-
     renderDebug(frame) {
         return <FrameDebug frameData={frame} />;
     }
 
-    controlActions(...args) {
-        // TODO: Make it use the argument instead of current state, allowing for manipulation of single rows/cols
+    renderControls() {
+        return <FrameControls actions={this.controlActions()} />;
+    }
 
-        let undo = ()       => { return; } // TODO: Use prevstate (and do anything at all )
-        let flipX = ()      => { return; }
-        let flipY = ()      => { return; }
+    controlActions(...args) {
+        args = Array.from(args); // TODO: Implement arguments
+
+        let undo = ()       => { return; } // TODO: Reduxify to get last state
         
-        let invert = ()     => { return; }
+        let flipX = ()      => { 
+            let newRows = this.state.pixelRows.map(row => {
+                return bin2dec(dec2bin(row).reverse());
+            }); 
+
+            return apply(newRows);
+        }
+
+        let flipY = ()      => { return apply(this.state.pixelRows.reverse()); }
         
-        let mirrorX = ()    => { return args[0]; }
-        let mirrorY = ()    => { return args[0]; }
+        let invert = ()     => { 
+            let newRows = this.state.pixelRows.map(row => {
+                return Math.abs(row - 255);
+            }); 
+
+            return apply(newRows);
+        }
         
-        let clear = ()      => { return apply(Array(8).fill(0)); } // here too
+        let mirrorX = ()    => { 
+            let newRows = this.state.pixelRows.map(row => {
+                let bin = dec2bin(row);
+                return bin2dec([...bin.slice(0, 4), ...bin.slice(0, 4).reverse()]);
+            });
+
+            return apply(newRows);
+        }
+        
+        let mirrorY = ()    => { 
+            let newRows = [...this.state.pixelRows.slice(0, 4), ...this.state.pixelRows.slice(0, 4).reverse()];
+            return apply(newRows);
+        }
+
+        let fillRandom = (e, nMax=8) => { 
+            // Randomises the rows with a neat graphical effect
+            // nMax determines how many times to repeat effect (default 8)
+            let n = 0;
+            let interval = setInterval(() => {
+                apply(Array.from({length: 8}, () => Math.floor(Math.random() * 255))); 
+                (n >= nMax) ? clearInterval(interval) : n++;
+            }, 50);
+
+            return;
+        }
+        
+        let clear = ()      => { return apply(Array(8).fill(0)); } 
 
         let shiftUp = ()    => { 
             let newRows = [...this.state.pixelRows.slice(1,8), this.state.pixelRows[0]];
-            apply(newRows)
+            return apply(newRows);
         }
 
         let shiftDown = ()    => {
             let newRows = [this.state.pixelRows[7], ...this.state.pixelRows.slice(0,7)];
-            apply(newRows)
+            return apply(newRows);
         }
 
         let shiftRight = ()    => {
@@ -118,7 +148,7 @@ class Frame extends React.Component {
                 return parseInt(row % 2 === 1 ? (row >> 1) + 128 : row >> 1, 10) 
             });
 
-            apply(newRows);
+            return apply(newRows);
         }
 
         let shiftLeft = ()    => { 
@@ -130,10 +160,10 @@ class Frame extends React.Component {
                 return (row >= 128 ? ((row - 128) << 1) + 1: row << 1)
             });
 
-            apply(newRows) 
+            return apply(newRows) 
         }
 
-        const apply = (newRows) => {
+        const apply = (newRows) => { // Probably rename this
             return this.setState(prevState => ({
                 pixelRows: newRows
             }));
@@ -147,6 +177,7 @@ class Frame extends React.Component {
                 invert: invert,
                 mirrorX: mirrorX,
                 mirrorY: mirrorY,
+                random: fillRandom,
                 clear: clear,
             },
             shift: {
@@ -162,7 +193,7 @@ class Frame extends React.Component {
         let newRows = this.state.pixelRows;
         newRows[y] = dec;
 
-        this.setState(prevState => ({
+        return this.setState(prevState => ({
             pixelRows: newRows,
         }));
     }
