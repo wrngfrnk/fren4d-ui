@@ -1,0 +1,56 @@
+@mixin breakpoint($width) {
+    @media screen and (max-width: $width) {
+        @content;
+    }
+}
+
+$mobile: "768px";
+
+#wrapper {
+    display: flex;
+    flex-flow: row nowrap;
+
+    @include breakpoint($mobile) {
+        flex-flow: column nowrap;
+    }
+}
+
+
+
+#sidebar {
+    width: 33%;
+    min-width: 300px;
+    margin-right: 25px;
+
+    @include breakpoint($mobile) {
+        width: 100%;
+        margin-bottom: 40px;
+    }
+}
+
+#frame-main {
+    @include breakpoint($mobile) {
+        width: 100%;
+    }
+}
+
+.pixel {
+    width: 40px;
+    height: 40px;
+    background: grey;
+    border: 1px solid black;
+    border-collapse: collapse;
+
+    &.active {
+        background: orange;
+    }
+}
+.frame-control-group {
+    &.frame-shift {
+        position: relative; 
+
+        button {
+            
+        }
+    }
+}
