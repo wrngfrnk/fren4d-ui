@@ -4,23 +4,24 @@ var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 
-var indexRouter = require('./routes/index');
-var loadRouter = require('./routes/load');
+var indexRouter = require('./routes/index'); // TODO: Literally anything? 
+var frameRouter = require('./routes/frame');
 
 var app = express();
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
-app.set('view engine', 'jade');
+app.set('view engine', 'jade'); // TODO: Plain HTML will probably do tbh, since I don't think express will render anythign on its own
 
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
+app.use('/animations', express.static(path.join(__dirname, 'animations')));
 
 app.use('/', indexRouter);
-app.use('/load', loadRouter);
+app.use('/frame', frameRouter);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

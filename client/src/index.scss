@@ -1,3 +1,6 @@
+// TODO: Split into separate files
+// TODO: Load directly with webpack
+
 @mixin breakpoint($width) {
     @media screen and (max-width: $width) {
         @content;

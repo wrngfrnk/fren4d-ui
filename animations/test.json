@@ -1,0 +1,11 @@
+{
+    "animation": {
+            "frames": [
+                {
+                    "frameData": [64, 64, 64, 255, 64, 64, 64, 64],
+                    "frameTime": 1000
+                }
+            ],
+            "mood": ["neutral", "idle"]
+        }
+    }

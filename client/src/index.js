@@ -1,7 +1,9 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
-import { bin2dec, dec2bin } from './helpers.js';
+import { bin2dec, dec2bin } from './Helpers.js';
+import Sidebar from './Sidebar.js';
+import Button from './Button.js';
 
 // TODO: Separate into different files per class if necessary
 // TODO: Use a Sass loader w/ webpack to directly deal with the sass files
@@ -67,12 +69,18 @@ class Frame extends React.Component {
         this.dec2bin = dec2bin.bind(this);
 
         this.state = {
-            pixelRows:  []
+            pixelRows:  [],
+            frameTime: 0,
+            currentFrame: this.props.currentFrame,
         }
     }
 
     componentWillReceiveProps(nextProps) {
-        this.setState({ pixelRows: nextProps.frameData });
+        this.setState({ 
+            pixelRows: nextProps.animation[this.state.currentFrame].frameData,
+            frameTime: nextProps.animation[this.state.currentFrame].frameTime,
+            currentFrame: this.state.currentFrame, 
+        });
     }
 
     renderDebug(frame) {
@@ -80,11 +88,11 @@ class Frame extends React.Component {
     }
 
     renderControls() {
-        return <FrameControls actions={this.controlActions()} />;
+        return <FrameControls actions={this.controlActions()} frameTime={this.state.frameTime} />;
     }
 
     controlActions(...args) {
-        args = Array.from(args); // TODO: Implement arguments
+        args = Array.from(args); // TODO: Implement arguments, move all this somewhere else
 
         let undo = ()       => { return; } // TODO: Reduxify to get last state
         
@@ -210,6 +218,7 @@ class Frame extends React.Component {
                     {this.renderControls() /* Directly mount the component maybe? */} 
                 </div>
                 <div className="frame-container">
+                    <div className="frame-current">Current Frame: {this.state.currentFrame}</div>
                     {Array.from(Array(rows).keys()).map((i) =>
                         <PixelRow y={i} clickHandler={this.clickHandler} bin={this.state.pixelRows[i]} key={"row" + i} />
                     )}
@@ -236,12 +245,6 @@ class FrameControls extends React.Component {
     render() {
         return (
             <div>
-                <div className="frame-control-group">
-                    <button>Previous frame</button>
-                    <button>Next frame</button>
-                    <button>Duplicate last frame</button>
-                    <button>Preview</button>
-                </div>
                 <div className="frame-control-group">
                     {Object.keys(this.props.actions.modify).map(a => {
                         // Output buttons for all the actions from the bound function handler
@@ -280,22 +283,6 @@ class FrameTimeline extends React.Component {
     }
 }
 
-class Sidebar extends React.Component {
-    // ...
-    render() {
-        return(
-            <div>
-                8x8 Led Matrix Animation Creator Thing
-                <div className="menu">
-                    <button>Save animation</button>
-                    <button>Load animation</button>
-                    <button>Delete animation</button>
-                </div>
-            </div>
-        );
-    }
-}
-
 class FrameDebug extends React.Component {
     render() {
         return null;
@@ -304,19 +291,52 @@ class FrameDebug extends React.Component {
 
 
 class Matrix extends React.Component {
-    state = {animation: {
-            frames: [{
-                frameData: [],
-            }]
+    // TODO: Let this handle currentFrame
+    constructor(props) {
+        super(props);
+
+        this.state = {
+            animation: {
+                frames: [{
+                    frameData: [],
+                    frameTime: 0
+                }],
+                mood: []
+            },
+            currentFrame: 0,
         }
     }
 
-    componentDidMount() {
-        fetch('/load')
+    componentDidMount() { // Get initial data
+        fetch('/frame/load/test')
             .then(res => res.json())
-            .then(res => {
-                this.setState({ animation: res.animation })
-            });
+            .then(res => this.setState({ animation: res.animation }));
+    }
+
+    setCurrentFrame(frame) {
+        console.log(frame);
+
+        this.setState({
+            currentFrame: frame
+        });
+    }
+
+    prevFrame() {
+        return (this.state.currentFrame - 1 <= 0) ? 0 : this.state.currentFrame - 1;
+    }
+
+    nextFrame() {
+        return this.state.currentFrame + 1;
+    }
+
+    duplFrame() {
+        // TODO: this frame = last frame
+        return 0;
+    }
+
+    deleteFrame() {
+        // TODO: Remove frames[currentFrame] from state
+        return 0;
     }
 
     render() {
@@ -326,8 +346,14 @@ class Matrix extends React.Component {
                     <Sidebar />
                 </div>
                 <div id="frame-main">
+                    <div className="frame-change">
+                        <Button action={() => this.setCurrentFrame(this.prevFrame())} text="Previous frame" />
+                        <Button action={() => this.setCurrentFrame(this.nextFrame())} text="Next frame" />
+                        <Button action={() => this.setCurrentFrame(this.prevFrame())} text="Duplicate last frame" />
+                        <Button action={this.deleteFrame} text="Delete frame" />
+                    </div>
                     <div className="frame">
-                        <Frame frameData={this.state.animation.frames[0].frameData} />
+                        <Frame animation={this.state.animation.frames} currentFrame={this.state.currentFrame} />
                     </div>
                 </div>
             </div>
