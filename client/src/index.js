@@ -76,10 +76,9 @@ class Frame extends React.Component {
     }
 
     componentWillReceiveProps(nextProps) {
+        console.log(nextProps)
         this.setState({ 
-            pixelRows: nextProps.animation[this.state.currentFrame].frameData,
-            frameTime: nextProps.animation[this.state.currentFrame].frameTime,
-            currentFrame: this.state.currentFrame, 
+            pixelRows: nextProps.frameData,
         });
     }
 
@@ -213,7 +212,7 @@ class Frame extends React.Component {
     render() {
         const rows = this.state.pixelRows.length;
         return (
-            <div>
+            <div className="frame">
                 <div className="frame-controls">
                     {this.renderControls() /* Directly mount the component maybe? */} 
                 </div>
@@ -291,16 +290,18 @@ class FrameDebug extends React.Component {
 
 
 class Matrix extends React.Component {
-    // TODO: Let this handle currentFrame
+    // TODO: Let this handle currentFrame, frameTime
     constructor(props) {
         super(props);
 
         this.state = {
             animation: {
                 frames: [{
-                    frameData: [],
+                    frameDataL: [],
+                    frameDataR: [],
                     frameTime: 0
                 }],
+                eye: 0,
                 mood: []
             },
             currentFrame: 0,
@@ -308,7 +309,7 @@ class Matrix extends React.Component {
     }
 
     componentDidMount() { // Get initial data
-        fetch('/frame/load/test')
+        fetch('/frame/load/test') // TODO: Some way to handle left vs right eye (SAme graphic? Mirrored? Completely separated?)
             .then(res => res.json())
             .then(res => this.setState({ animation: res.animation }));
     }
@@ -345,16 +346,15 @@ class Matrix extends React.Component {
                 <div id="sidebar">
                     <Sidebar />
                 </div>
+                <div className="frame-change">
+                    <Button action={() => this.setCurrentFrame(this.prevFrame())} text="Previous frame" />
+                    <Button action={() => this.setCurrentFrame(this.nextFrame())} text="Next frame" />
+                    <Button action={() => this.setCurrentFrame(this.prevFrame())} text="Duplicate last frame" />
+                    <Button action={this.deleteFrame} text="Delete frame" />
+                </div>
                 <div id="frame-main">
-                    <div className="frame-change">
-                        <Button action={() => this.setCurrentFrame(this.prevFrame())} text="Previous frame" />
-                        <Button action={() => this.setCurrentFrame(this.nextFrame())} text="Next frame" />
-                        <Button action={() => this.setCurrentFrame(this.prevFrame())} text="Duplicate last frame" />
-                        <Button action={this.deleteFrame} text="Delete frame" />
-                    </div>
-                    <div className="frame">
-                        <Frame animation={this.state.animation.frames} currentFrame={this.state.currentFrame} />
-                    </div>
+                    <Frame frameData={this.state.animation.frames[this.state.currentFrame].frameDataL} />
+                    <Frame frameData={this.state.animation.frames[this.state.currentFrame].frameDataR} />
                 </div>
             </div>
         );

@@ -2,10 +2,12 @@
     "animation": {
             "frames": [
                 {
-                    "frameData": [64, 64, 64, 255, 64, 64, 64, 64],
+                    "frameDataL": [64, 64, 64, 255, 64, 64, 64, 64],
+                    "frameDataR": [64, 64, 64, 64, 255, 64, 64, 64],
                     "frameTime": 1000
                 }
             ],
+            "eye": 0,
             "mood": ["neutral", "idle"]
         }
     }

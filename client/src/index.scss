@@ -10,18 +10,13 @@
 $mobile: "768px";
 
 #wrapper {
-    display: flex;
-    flex-flow: row nowrap;
 
-    @include breakpoint($mobile) {
-        flex-flow: column nowrap;
-    }
 }
 
 
 
 #sidebar {
-    width: 33%;
+    width: 100%;
     min-width: 300px;
     margin-right: 25px;
 
@@ -32,6 +27,18 @@ $mobile: "768px";
 }
 
 #frame-main {
+    margin-top: 40px;
+    
+    display: flex;
+
+    .frame {
+        width: 50%;
+    }
+
+    .frame-change {
+        width: 100%;
+    }
+
     @include breakpoint($mobile) {
         width: 100%;
     }
