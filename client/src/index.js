@@ -124,16 +124,8 @@ class Frame extends React.Component {
             return apply(newRows);
         }
 
-        let fillRandom = (e, nMax=8) => { 
-            // Randomises the rows with a neat graphical effect
-            // nMax determines how many times to repeat effect (default 8)
-            let n = 0;
-            let interval = setInterval(() => {
-                apply(Array.from({length: 8}, () => Math.floor(Math.random() * 255))); 
-                (n >= nMax) ? clearInterval(interval) : n++;
-            }, 50);
-
-            return;
+        let fillRandom = () => {
+            return apply(Array.from({length: 8}, () => Math.floor(Math.random() * 255))); 
         }
         
         let clear = ()      => { return apply(Array(8).fill(0)); } 
@@ -202,8 +194,6 @@ class Frame extends React.Component {
         // this.setState(prevState => ({
         //     pixelRows: newRows,
         // }));
-
-        console.log(this.props.eye, newRows)
 
         this.props.onUpdate(this.props.eye, newRows)
 
@@ -374,6 +364,13 @@ class Matrix extends React.Component {
         });
     }
 
+    copyLR(eye = 0) {
+        let template = JSON.parse(JSON.stringify(this.state.animation.frames[this.state.currentFrame]))
+        let newEye = (eye === 1) ? template.frameDataL : template.frameDataR;
+
+        this.updateFrame(eye, newEye);
+    }
+
     previewAnim() {
         if(!this.state.previewing) {
             let saveFrame = this.state.currentFrame;
@@ -402,6 +399,7 @@ class Matrix extends React.Component {
     render() {
         return (
             <div id="wrapper">
+                {this.state.previewing ? <div id="previewing">PREVIEWING...</div> : null}
                 <Sidebar />
                 <div className="frame-change">
                     <Button 
@@ -438,7 +436,10 @@ class Matrix extends React.Component {
                 {/*<div className="frame-time">
                     <input type="range" min="10" max="30000" />
                 </div>*/}
-                {this.state.previewing ? <div id="previewing">PREVIEWING...</div> : null}
+                <div id="frame-clone">
+                    <Button action={() => this.copyLR(1)} text="Copy L > R" />
+                    <Button action={() => this.copyLR(0)} text="Copy L < R" />
+                </div>
                 <div id="frame-main">
                     <Frame eye={0} frameData={this.state.animation.frames[this.state.currentFrame].frameDataL} onUpdate={this.updateFrame} />
                     <Frame eye={1} frameData={this.state.animation.frames[this.state.currentFrame].frameDataR} onUpdate={this.updateFrame} />

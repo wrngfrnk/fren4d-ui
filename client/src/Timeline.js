@@ -1,9 +1,14 @@
 import React from 'react';
 import './Timeline.css';
+import {dec2bin} from './Helpers.js';
+
+// TODO: For performance reasons, the thumbnails should be rendered in some other way.
 
 class FrameThumb extends React.Component {
-    renderLine(side, i, width) {
-        return <div key={"e" + side + "f" + this.props.num + "l" + i} className="line" style={{width: width + "%"}}></div>
+    renderLine(side, data) {
+        return data.map((row, j) => {
+            return <div key={"e" + side + "f" + this.props.num + "l" + j} className={"minipx" + ((row === 1) ? " active" : "")}></div>    
+        })
     }
 
     render() {
@@ -14,14 +19,14 @@ class FrameThumb extends React.Component {
                     <div className="eye">
                         {this.props.bin.L
                             .map((row, i) => {
-                                return this.renderLine("L", i, (row / 255) * 100);
+                                return this.renderLine("L", dec2bin(row));
                             })
                         }
                     </div>
                     <div className="eye">
                         {this.props.bin.R
                             .map((row, i) => {
-                                return this.renderLine("R", i, (row / 255) * 100);
+                                return this.renderLine("R", dec2bin(row));
                             })
                         }
                     </div>

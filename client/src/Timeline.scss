@@ -55,11 +55,17 @@
                     
                     width: 50px;
                     height: 50px;
-                }
-
-                .line {
-                    background: orange;
-                    height: calc(50px / 8);
+                    display: flex;
+                    flex-flow: row wrap;
+                    
+                    .minipx {
+                        &.active {
+                            background: orange;
+                        }
+                        
+                        width: calc(50px / 8);
+                        height: calc(50px / 8);
+                    }
                 }
             }
         }
