@@ -9,11 +9,12 @@
 
 $mobile: "768px";
 
+
+
 #wrapper {
-
+    margin: 12px;
+    box-sizing: border-box;
 }
-
-
 
 #sidebar {
     width: 100%;
@@ -26,14 +27,75 @@ $mobile: "768px";
     }
 }
 
+#previewing {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    text-shadow: 1px 2px black;
+}
+
+.frame-container {
+    display: grid;
+    grid-template-columns: 20px 300px 20px;
+    grid-template-rows: 20px 300px 20px;
+
+    .frame-grid {
+        grid-column: 2 / 2;
+        grid-row: 2 / 2;
+        
+        height: 100%;
+        width: 100%;
+
+        .pixel-row {
+            height: 12.5%;
+
+            .pixel {
+                height: 100%;
+                width: 12.5%;
+                background: grey;
+                border: 1px solid black;
+                border-collapse: collapse;
+
+                transition: background 250ms;
+
+                &.active {
+                    background: orange;
+                }
+            }    
+        }
+
+    }
+
+    .frame-shift {
+        margin: 0;
+
+        &.up {
+            grid-column: 2 / 2;
+            grid-row: 1 / 1;
+        }
+
+        &.down {
+            grid-column: 2 / 2;
+            grid-row: 3 / 3;
+        }
+
+        &.left {
+            grid-column: 1 / 1;
+            grid-row: 2 / 2;
+        }
+
+        &.right {
+            grid-column: 3 / 3;
+            grid-row: 2 / 2;
+        }
+    }
+}
+
 #frame-main {
     margin-top: 40px;
     
     display: flex;
-
-    .frame {
-        width: 50%;
-    }
+    justify-content: space-between;
 
     .frame-change {
         width: 100%;
@@ -44,23 +106,3 @@ $mobile: "768px";
     }
 }
 
-.pixel {
-    width: 40px;
-    height: 40px;
-    background: grey;
-    border: 1px solid black;
-    border-collapse: collapse;
-
-    &.active {
-        background: orange;
-    }
-}
-.frame-control-group {
-    &.frame-shift {
-        position: relative; 
-
-        button {
-            
-        }
-    }
-}

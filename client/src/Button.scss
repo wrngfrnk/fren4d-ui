@@ -1,0 +1,26 @@
+.Button {
+    // Remove defaults
+    margin: 0;
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    border: none;
+
+    // ---
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid #22AA00;
+    border-radius: 2px;
+    padding: 2px;
+    margin: 0 2px;
+    cursor: pointer;
+    transition: background 100ms;
+
+    &:active {
+        background: rgba(255, 255, 255, 0.2);
+    }
+
+    &:disabled {
+        color: grey;
+        border-color: grey;
+    }
+}

@@ -4,6 +4,7 @@ import './index.css';
 import { bin2dec, dec2bin } from './Helpers.js';
 import Sidebar from './Sidebar.js';
 import Button from './Button.js';
+import Timeline from './Timeline.js';
 
 // TODO: Separate into different files per class if necessary
 // TODO: Use a Sass loader w/ webpack to directly deal with the sass files
@@ -50,11 +51,10 @@ class PixelRow extends React.Component {
         const cols = 8
         
         return (
-            <div>
+            <div className="pixel-row">
                 {Array.from(Array(cols).keys()).map((x) => 
                     this.renderPixel(this.props.y, x, this.getCurrentPixelActive(x))
                 )}
-                {this.props.bin}
             </div>
         );
     }
@@ -70,13 +70,10 @@ class Frame extends React.Component {
 
         this.state = {
             pixelRows:  [],
-            frameTime: 0,
-            currentFrame: this.props.currentFrame,
         }
     }
 
     componentWillReceiveProps(nextProps) {
-        console.log(nextProps)
         this.setState({ 
             pixelRows: nextProps.frameData,
         });
@@ -87,7 +84,7 @@ class Frame extends React.Component {
     }
 
     renderControls() {
-        return <FrameControls actions={this.controlActions()} frameTime={this.state.frameTime} />;
+        return <FrameControls actions={this.controlActions()} />;
     }
 
     controlActions(...args) {
@@ -175,9 +172,7 @@ class Frame extends React.Component {
         }
 
         const apply = (newRows) => { // Probably rename this
-            return this.setState(prevState => ({
-                pixelRows: newRows
-            }));
+            return this.props.onUpdate(this.props.eye, newRows)
         }
 
         return {
@@ -204,9 +199,15 @@ class Frame extends React.Component {
         let newRows = this.state.pixelRows;
         newRows[y] = dec;
 
-        return this.setState(prevState => ({
-            pixelRows: newRows,
-        }));
+        // this.setState(prevState => ({
+        //     pixelRows: newRows,
+        // }));
+
+        console.log(this.props.eye, newRows)
+
+        this.props.onUpdate(this.props.eye, newRows)
+
+        return;
     }
 
     render() {
@@ -217,10 +218,15 @@ class Frame extends React.Component {
                     {this.renderControls() /* Directly mount the component maybe? */} 
                 </div>
                 <div className="frame-container">
-                    <div className="frame-current">Current Frame: {this.state.currentFrame}</div>
-                    {Array.from(Array(rows).keys()).map((i) =>
-                        <PixelRow y={i} clickHandler={this.clickHandler} bin={this.state.pixelRows[i]} key={"row" + i} />
-                    )}
+                    <FrameShifter key={"shift-up"} dir={"up"} action={this.controlActions().shift.up} label="^" />
+                    <FrameShifter key={"shift-left"} dir={"left"} action={this.controlActions().shift.left} label="<" />
+                    <div className="frame-grid">
+                        {Array.from(Array(rows).keys()).map((i) =>
+                            <PixelRow y={i} clickHandler={this.clickHandler} bin={this.state.pixelRows[i]} key={"row" + i} />
+                        )}
+                    </div>
+                    <FrameShifter key={"shift-right"} dir={"right"} action={this.controlActions().shift.right} label=">" />
+                    <FrameShifter key={"shift-down"} dir={"down"} action={this.controlActions().shift.down} label="v" />
                 </div>
                 <div className="frame-timeline">
                     <FrameTimeline />
@@ -234,32 +240,14 @@ class Frame extends React.Component {
 }
 
 class FrameControls extends React.Component {
-    constructor(props) {
-        super(props)
-        this.state = {
-            frameTime: 0
-        }
-    }
-
     render() {
         return (
-            <div>
-                <div className="frame-control-group">
-                    {Object.keys(this.props.actions.modify).map(a => {
-                        // Output buttons for all the actions from the bound function handler
-                        return <button key={"action-" + a} onClick={this.props.actions.modify[a]}>{a}</button>
-                        })
-                    }
-                </div>
-                <div className="frame-control-group">
-                    Frame time <input type="range" min="0" max="30000" step="10" id="frameTime" onChange={e => this.setState({frameTime: e.target.value})} /> {this.state.frameTime} ms
-                </div>
-                <div className="frame-control-group frame-shift">
-                    {Object.keys(this.props.actions.shift).map(d => {
-                        return <FrameShifter key={"shift-" + d} dir={d} action={this.props.actions.shift[d]} />
-                        })
-                    }                    
-                </div>
+           <div className="frame-control-group">
+                {Object.keys(this.props.actions.modify).map(a => {
+                    // Output buttons for all the actions from the bound function handler
+                    return <Button key={"action-" + a} action={this.props.actions.modify[a]} buttonClass="frame-control" text={a} />
+                    })
+                }
             </div>
         );
     }
@@ -268,9 +256,7 @@ class FrameControls extends React.Component {
 class FrameShifter extends React.Component {
     render() {
         return (
-            <button className={"frame-shift-" + this.props.dir} onClick={this.props.action}>
-                Shift {this.props.dir}
-            </button>
+            <Button buttonClass={"frame-shift " + this.props.dir} action={this.props.action} text={this.props.label} />
         );
     }
 
@@ -294,6 +280,10 @@ class Matrix extends React.Component {
     constructor(props) {
         super(props);
 
+        this.setCurrentFrame = this.setCurrentFrame.bind(this);
+        this.previewAnim = this.previewAnim.bind(this);
+        this.updateFrame = this.updateFrame.bind(this);
+
         this.state = {
             animation: {
                 frames: [{
@@ -301,7 +291,6 @@ class Matrix extends React.Component {
                     frameDataR: [],
                     frameTime: 0
                 }],
-                eye: 0,
                 mood: []
             },
             currentFrame: 0,
@@ -314,9 +303,11 @@ class Matrix extends React.Component {
             .then(res => this.setState({ animation: res.animation }));
     }
 
-    setCurrentFrame(frame) {
-        console.log(frame);
+    getLength() {
+        return this.state.animation.frames.length;
+    }
 
+    setCurrentFrame(frame = 0) {
         this.setState({
             currentFrame: frame
         });
@@ -327,35 +318,132 @@ class Matrix extends React.Component {
     }
 
     nextFrame() {
-        return this.state.currentFrame + 1;
+        let nextFrame = this.state.currentFrame + 1 === this.state.animation.frames.length ? this.state.currentFrame : this.state.currentFrame + 1;
+        return nextFrame;
+   }
+
+    addFrame(newData = {frameDataL: Array(8).fill(0), frameDataR: Array(8).fill(0), frameTime: 1000}) {
+        let newFrames = [
+            ...this.state.animation.frames.slice(0, this.state.currentFrame + 1).concat(newData),
+            ...this.state.animation.frames.slice(this.state.currentFrame + 1, this.getLength())
+        ]
+
+        this.setState({
+            animation: {
+                frames: newFrames
+            }
+        })
+
+        setTimeout(() => {
+            this.setCurrentFrame(this.nextFrame())
+        }, 10); // Ugly hack to wait for the state to be set before proceeding to the next frame.
     }
 
-    duplFrame() {
-        // TODO: this frame = last frame
-        return 0;
+    duplicateFrame() {
+        let template = JSON.parse(JSON.stringify(
+            this.state.animation.frames.slice(this.state.currentFrame, this.state.currentFrame + 1)[0]
+        )); // Ugly hack to deep copy template data
+        
+        return this.addFrame(template)
     }
 
     deleteFrame() {
-        // TODO: Remove frames[currentFrame] from state
-        return 0;
+        let newFrames = [...this.state.animation.frames.slice(0, this.state.currentFrame), ...this.state.animation.frames.slice(this.state.currentFrame + 1, this.state.animation.frames.length)];
+
+        if(this.state.currentFrame + 1 === this.getLength()) {
+            this.setCurrentFrame(this.prevFrame());
+        }
+
+        this.setState({
+            animation: {
+                frames: newFrames
+            }
+        });
+    }
+
+    updateFrame(eye, data) {
+        let targetEye = "frameData" + (eye === 0 ? 'L' : 'R');
+        let newFrame = this.state.animation.frames;
+        
+        newFrame[this.state.currentFrame][targetEye] = data;
+
+        this.setState({
+            animation: {
+                frames: newFrame
+            }
+        });
+    }
+
+    previewAnim() {
+        if(!this.state.previewing) {
+            let saveFrame = this.state.currentFrame;
+            this.setCurrentFrame();
+            this.setState({
+                previewing: true
+            })
+            let play = () => {
+                setTimeout(() => {
+                    if(this.state.currentFrame + 1 !== this.state.animation.frames.length) {
+                        this.setCurrentFrame(this.nextFrame());
+                        play();
+                    } else {
+                        this.setState({
+                            currentFrame: saveFrame,
+                            previewing: false,
+                        });
+                    }
+                }, this.state.animation.frames[this.state.currentFrame].frameTime);
+            }
+
+            return play();
+        }
     }
 
     render() {
         return (
             <div id="wrapper">
-                <div id="sidebar">
-                    <Sidebar />
-                </div>
+                <Sidebar />
                 <div className="frame-change">
-                    <Button action={() => this.setCurrentFrame(this.prevFrame())} text="Previous frame" />
-                    <Button action={() => this.setCurrentFrame(this.nextFrame())} text="Next frame" />
-                    <Button action={() => this.setCurrentFrame(this.prevFrame())} text="Duplicate last frame" />
-                    <Button action={this.deleteFrame} text="Delete frame" />
+                    <Button 
+                        action={() => this.setCurrentFrame(this.prevFrame())} 
+                        text="Prev frame" 
+                        disabled={this.state.currentFrame === 0}
+                    />
+
+                    <Button 
+                        action={() => this.addFrame()} 
+                        text="Add frame" 
+                    />
+                    
+                    <Button 
+                        action={() => this.setCurrentFrame(this.nextFrame())} 
+                        text="Next frame" 
+                        disabled={this.state.currentFrame +1 === this.state.animation.frames.length}
+                    /> 
+
+                    <br />
+
+                    <Button 
+                        action={() => this.duplicateFrame()} 
+                        text="Duplicate frame"
+                    />
+                    
+                    <Button 
+                        action={() => this.deleteFrame()} 
+                        text="Delete frame"
+                        disabled={this.state.animation.frames.length <= 1}
+                    />
                 </div>
+                <Button action={this.previewAnim} text="Preview Animation"  />
+                {/*<div className="frame-time">
+                    <input type="range" min="10" max="30000" />
+                </div>*/}
+                {this.state.previewing ? <div id="previewing">PREVIEWING...</div> : null}
                 <div id="frame-main">
-                    <Frame frameData={this.state.animation.frames[this.state.currentFrame].frameDataL} />
-                    <Frame frameData={this.state.animation.frames[this.state.currentFrame].frameDataR} />
+                    <Frame eye={0} frameData={this.state.animation.frames[this.state.currentFrame].frameDataL} onUpdate={this.updateFrame} />
+                    <Frame eye={1} frameData={this.state.animation.frames[this.state.currentFrame].frameDataR} onUpdate={this.updateFrame} />
                 </div>
+                <Timeline frames={this.state.animation.frames} currentFrame={this.state.currentFrame} action={this.setCurrentFrame} />
             </div>
         );
     }

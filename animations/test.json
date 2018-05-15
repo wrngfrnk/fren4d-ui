@@ -2,12 +2,43 @@
     "animation": {
             "frames": [
                 {
-                    "frameDataL": [64, 64, 64, 255, 64, 64, 64, 64],
-                    "frameDataR": [64, 64, 64, 64, 255, 64, 64, 64],
+                    "frameDataL": [0, 0, 0, 255, 0, 0, 0, 0],
+                    "frameDataR": [0, 0, 0, 0, 255, 0, 0, 0],
+                    "frameTime": 1000
+                },{
+                    "frameDataL": [0, 0, 255, 0, 0, 0, 0, 0],
+                    "frameDataR": [0, 0, 0, 0, 0, 255, 0, 0],
+                    "frameTime": 1000
+                },{
+                    "frameDataL": [0, 255, 0, 0, 0, 0, 0, 0],
+                    "frameDataR": [0, 0, 0, 0, 0, 0, 255, 0],
+                    "frameTime": 1000
+                },{
+                    "frameDataL": [255, 0, 0, 0, 0, 0, 0, 0],
+                    "frameDataR": [0, 0, 0, 0, 0, 0, 0, 255],
+                    "frameTime": 1000
+                },{
+                    "frameDataL": [0, 0, 0, 0, 0, 0, 0, 255],
+                    "frameDataR": [255, 0, 0, 0, 0, 0, 0, 0],
+                    "frameTime": 1000
+                },{
+                    "frameDataL": [0, 0, 0, 0, 0, 0, 255, 0],
+                    "frameDataR": [0, 255, 0, 0, 0, 0, 0, 0],
+                    "frameTime": 1000
+                },{
+                    "frameDataL": [0, 0, 0, 0, 0, 255, 0, 0],
+                    "frameDataR": [0, 0, 255, 0, 0, 0, 0, 0],
+                    "frameTime": 1000
+                },{
+                    "frameDataL": [0, 0, 0, 0, 255, 0, 0, 0],
+                    "frameDataR": [0, 0, 0, 255, 0, 0, 0, 0],
+                    "frameTime": 1000
+                },{
+                    "frameDataL": [255, 255, 255, 0, 255, 255, 255, 255],
+                    "frameDataR": [0, 0, 0, 255, 0, 0, 0, 0],
                     "frameTime": 1000
                 }
             ],
-            "eye": 0,
             "mood": ["neutral", "idle"]
         }
     }

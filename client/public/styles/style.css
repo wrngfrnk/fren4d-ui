@@ -1,0 +1,22 @@
+html {
+    background: url("./../images/robots.png");
+}
+
+body * {
+    font-family: monospace;
+    color: #44DD00;
+}
+
+p, button {
+    font-size: 110%;
+}
+
+h1 {
+    font-size: 150%;
+    font-weight: 400;
+}
+
+h2 {
+    font-size: 133%;
+    font-weight: 400;
+}
