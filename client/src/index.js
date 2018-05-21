@@ -15,28 +15,26 @@ class Pixel extends React.Component {
     // TODO: Change onClick to something else that allows clicking and dragging to activate several pixels at once
     render() {
         return (
-            <button className={`pixel${this.props.active ? " active" : ""}`} onClick={this.props.action}></button>
+            <button className={`pixel${this.props.active ? " active" : ""}`} onMouseDown={this.props.action} onMouseOver={this.props.action}></button>
         );
     }
 }
 
 class PixelRow extends React.Component {
-    // TODO: Be consistent with (x, y) vs (y, x)
     constructor(props) {
         super(props);
-        this.bin2dec = bin2dec.bind(this)
-        this.dec2bin = dec2bin.bind(this)
-        this.state = {
-            bin: this.props.bin
-        }
+        this.bin2dec = bin2dec.bind(this);
+        this.dec2bin = dec2bin.bind(this);
     }
 
-    updateRow(x, y, active) {
-        let newBin = this.dec2bin(this.props.bin);
-        newBin[x] = active ? 1 : 0;
-        let dec = this.bin2dec(newBin);
-
-        this.props.clickHandler(x, y, dec);
+    updateRow(e, x, y, active) {
+        if(e.buttons === 1) {
+            let newBin = this.dec2bin(this.props.bin);
+            newBin[x] = active ? 1 : 0;
+         
+            let dec = this.bin2dec(newBin);
+            this.props.clickHandler(y, dec);
+        }
     }
 
     getCurrentPixelActive(x) {
@@ -44,15 +42,13 @@ class PixelRow extends React.Component {
     }
 
     renderPixel(y, x, active) {
-        return <Pixel key={"pixel" + y + "" + x} x={x} y={y} active={ active } action={e => this.updateRow(x, y, !active)} />;
+        return <Pixel key={"pixel" + y + "" + x} x={x} y={y} active={ active } action={e => this.updateRow(e, x, y, !active)} />;
     } 
 
     render() {
-        const cols = 8
-        
         return (
             <div className="pixel-row">
-                {Array.from(Array(cols).keys()).map((x) => 
+                {Array.from(Array(8).keys()).map((x) => 
                     this.renderPixel(this.props.y, x, this.getCurrentPixelActive(x))
                 )}
             </div>
@@ -79,10 +75,6 @@ class Frame extends React.Component {
         });
     }
 
-    renderDebug(frame) {
-        return <FrameDebug frameData={frame} />;
-    }
-
     renderControls() {
         return <FrameControls actions={this.controlActions()} />;
     }
@@ -90,7 +82,7 @@ class Frame extends React.Component {
     controlActions(...args) {
         args = Array.from(args); // TODO: Implement arguments, move all this somewhere else
 
-        let undo = ()       => { return; } // TODO: Reduxify to get last state
+        let undo = ()       => { return; } // TODO: Anything
         
         let flipX = ()      => { 
             let newRows = this.state.pixelRows.map(row => {
@@ -187,16 +179,12 @@ class Frame extends React.Component {
         }
     }
 
-    clickHandler(e, y, dec) {
+    clickHandler(row, dec) {
         let newRows = this.state.pixelRows;
-        newRows[y] = dec;
-
-        // this.setState(prevState => ({
-        //     pixelRows: newRows,
-        // }));
+        newRows[row] = dec;
 
         this.props.onUpdate(this.props.eye, newRows)
-
+    
         return;
     }
 
@@ -218,18 +206,16 @@ class Frame extends React.Component {
                     <FrameShifter key={"shift-right"} dir={"right"} action={this.controlActions().shift.right} label=">" />
                     <FrameShifter key={"shift-down"} dir={"down"} action={this.controlActions().shift.down} label="v" />
                 </div>
-                <div className="frame-timeline">
-                    <FrameTimeline />
-                </div>
-                <div className="frame-debug">
-                    {this.renderDebug(this.state.pixelRows)}
-                </div>
             </div>
         );
     }
 }
 
 class FrameControls extends React.Component {
+    shouldComponentUpdate() {
+        return false;
+    }
+
     render() {
         return (
            <div className="frame-control-group">
@@ -244,6 +230,10 @@ class FrameControls extends React.Component {
 }
 
 class FrameShifter extends React.Component {
+    shouldComponentUpdate() {
+        return false;
+    }
+
     render() {
         return (
             <Button buttonClass={"frame-shift " + this.props.dir} action={this.props.action} text={this.props.label} />
@@ -251,19 +241,6 @@ class FrameShifter extends React.Component {
     }
 
 }
-
-class FrameTimeline extends React.Component {
-    render() {
-        return null;
-    }
-}
-
-class FrameDebug extends React.Component {
-    render() {
-        return null;
-    }
-}
-
 
 class Matrix extends React.Component {
     // TODO: Let this handle currentFrame, frameTime
@@ -273,6 +250,7 @@ class Matrix extends React.Component {
         this.setCurrentFrame = this.setCurrentFrame.bind(this);
         this.previewAnim = this.previewAnim.bind(this);
         this.updateFrame = this.updateFrame.bind(this);
+        this.saveAnimation = this.saveAnimation.bind(this);
 
         this.state = {
             animation: {
@@ -364,6 +342,17 @@ class Matrix extends React.Component {
         });
     }
 
+    updateFrameTime(val) {
+        let newFrame = this.state.animation.frames;
+        newFrame[this.state.currentFrame].frameTime = val;
+
+        this.setState({
+            animation: {
+                frames: newFrame
+            }
+        });
+    }
+
     copyLR(eye = 0) {
         let template = JSON.parse(JSON.stringify(this.state.animation.frames[this.state.currentFrame]))
         let newEye = (eye === 1) ? template.frameDataL : template.frameDataR;
@@ -396,11 +385,28 @@ class Matrix extends React.Component {
         }
     }
 
+    saveAnimation() {
+        const url = '/frame/save/test';
+        const data = this.state.animation;
+
+        fetch(url, {
+          method: 'POST',
+          body: JSON.stringify(data),
+          headers: new Headers({
+            'Content-Type': 'application/json'
+          }),
+        }).then(console.log("Saved it, probably."))
+    }
+
     render() {
         return (
             <div id="wrapper">
                 {this.state.previewing ? <div id="previewing">PREVIEWING...</div> : null}
                 <Sidebar />
+                <Button
+                    action={() => this.saveAnimation()}
+                    text="Save animation"
+                />
                 <div className="frame-change">
                     <Button 
                         action={() => this.setCurrentFrame(this.prevFrame())} 
@@ -433,12 +439,22 @@ class Matrix extends React.Component {
                     />
                 </div>
                 <Button action={this.previewAnim} text="Preview Animation"  />
-                {/*<div className="frame-time">
-                    <input type="range" min="10" max="30000" />
-                </div>*/}
                 <div id="frame-clone">
                     <Button action={() => this.copyLR(1)} text="Copy L > R" />
                     <Button action={() => this.copyLR(0)} text="Copy L < R" />
+                </div>
+                <div id="frame-time"> {/* TODO: Make the frametime easier to set */}
+                    Frame Time: 
+                    <input 
+                        list="frametimes" 
+                        type="range" 
+                        min="10" 
+                        max="1000"
+                        step="10"
+                        onChange={e => {this.updateFrameTime(e.target.value)}} 
+                        value={this.state.animation.frames[this.state.currentFrame].frameTime}
+                    /> 
+                    {this.state.animation.frames[this.state.currentFrame].frameTime} ms
                 </div>
                 <div id="frame-main">
                     <Frame eye={0} frameData={this.state.animation.frames[this.state.currentFrame].frameDataL} onUpdate={this.updateFrame} />

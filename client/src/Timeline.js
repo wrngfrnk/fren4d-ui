@@ -43,16 +43,9 @@ class Timeline extends React.Component {
         this.returnFrame = this.returnFrame.bind(this);
 
         this.state = {
-            frames: [],
             scroll: null,
             scrollPos: 0,
         }
-    }
-
-    componentWillReceiveProps(nextProps) {
-        this.setState({ 
-            frames: nextProps.frames,
-        });
     }
 
     returnFrame(frame) {
@@ -81,11 +74,11 @@ class Timeline extends React.Component {
         return (
             <div>
                 <h2>Timeline</h2>
-                <p>Current frame: {this.props.currentFrame + 1} of {this.state.frames.length}</p>
+                <p>Current frame: {this.props.currentFrame + 1} of {this.props.frames.length}</p>
                 <div id="timeline" ref="rollOuter">
                     <div className="timeline-scroll left" onMouseEnter={() => this.doScroll(true)} onMouseLeave={() => this.stopScroll()}></div>
                     <div id="timeline-roll" ref="rollInner" style={{left: this.state.scrollPos + "px"}} >
-                        {this.state.frames
+                        {this.props.frames
                             .map((row, i) => {
                                 let isActive = this.props.currentFrame === i;
                                 return <FrameThumb 

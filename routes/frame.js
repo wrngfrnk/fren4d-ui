@@ -8,4 +8,8 @@ router.get('/load/:anim', function(req, res, next) {
     res.send(file);
 });
 
+router.post('/save/:anim', function(req, res) {
+    fs.writeFile('animations/' + req.params.anim + '.json', JSON.stringify({'animation': req.body}), () => res.send('saved'));
+});
+
 module.exports = router;
