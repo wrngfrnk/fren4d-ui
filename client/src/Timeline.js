@@ -1,10 +1,15 @@
 import React from 'react';
 import './Timeline.css';
-import {dec2bin} from './Helpers.js';
+import {dec2bin, bin2dec} from './Helpers.js';
 
-// TODO: For performance reasons, the thumbnails should be rendered in some other way.
+// TODO: Prevent all thumbnails from updating on every render
+// TODO: Use canvas for Thumbs
 
 class FrameThumb extends React.Component {
+    shouldComponentUpdate(nextProps) {
+        return this.props.isActive || this.props.forceUpdate || this.props.isActive !== nextProps.isActive; 
+    }
+
     renderLine(side, data) {
         return data.map((row, j) => {
             return <div key={"e" + side + "f" + this.props.num + "l" + j} className={"minipx" + ((row === 1) ? " active" : "")}></div>    
@@ -45,7 +50,15 @@ class Timeline extends React.Component {
         this.state = {
             scroll: null,
             scrollPos: 0,
+            forceUpdate: false
         }
+    }
+
+    componentWillReceiveProps(nextProps) {
+        // Conditions for forcing a thumbnail update.
+        this.setState({
+            forceUpdate: nextProps.frames.length !== this.props.frames.length,
+        });
     }
 
     returnFrame(frame) {
@@ -70,6 +83,7 @@ class Timeline extends React.Component {
         clearInterval(this.state.scroll)
     }
 
+
     render() {
         return (
             <div>
@@ -86,7 +100,8 @@ class Timeline extends React.Component {
                                     num={i+1} 
                                     isActive={isActive} 
                                     action={() => this.returnFrame(i)} 
-                                    bin={{L: this.props.frames[i].frameDataL, R: this.props.frames[i].frameDataR}} 
+                                    bin={{L: this.props.frames[i].frameDataL, R: this.props.frames[i].frameDataR}}
+                                    forceUpdate={this.state.forceUpdate}
                                 />;
                             })
                         }     
