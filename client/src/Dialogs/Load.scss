@@ -1,0 +1,17 @@
+.file-manager {
+    border: 2px solid green;
+    padding: 4px;
+    height: 200px;
+    overflow-y: scroll;
+    list-style: inside;
+
+    .file-line {
+        cursor: pointer;
+        padding: 4px;
+
+        &.selected {
+            background: #44DD00;
+            color: #333;
+        }
+    }
+}

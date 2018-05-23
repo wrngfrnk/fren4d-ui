@@ -1,49 +1,68 @@
 import React from 'react';
+import ReactDOM from 'react-dom';
 import Button from './Button.js';
 import './Dialog.css';
+
+import SaveDialog from './Dialogs/Save.js';
+import LoadDialog from './Dialogs/Load.js';
 
 class Dialog extends React.PureComponent {
     constructor(props) {
         super(props);
-        
-        this.state = {
-            show: true
+
+        this.container = document.createElement('div');
+    }
+
+    getDialogBody() {
+        // TODO: Multiple actions w/ spread operator
+        switch(this.props.template){
+            case 'save':
+                return <SaveDialog filename={this.props.dialogData.filename || 'NO NAME'} />
+            case 'load':
+                return <LoadDialog loadAction={this.props.dialogData.loadAction.bind(this)} closeAction={this.props.closeAction}/>
+
+            default:
+                return "EWWOW!! LOOKS LIKE WE MADE A LIL OOPSIE WOOPSIE FUCKY WUCKY OwO";
         }
     }
 
-    generateButtons() {
-        return [<Button text="OK" />, <Button text="Cancel" />];
+    generateDialogLayout() {
+        const dialogButtons = this.props.dialogData.actions.map(act => {
+            return <Button key={"act-" + act.label} text={act.label} action={act.func} callback={() => this.props.closeAction()} />
+        });
+
+        return (
+            <div className="dialog-backdrop">
+                <div className={"dialog-box " + this.props.template}>
+                    <div className="dialog-closer" onClick={this.props.closeAction}>
+                        x
+                    </div>
+                    <div className="dialog-title">
+                        {this.props.dialogData.title}
+                    </div> 
+                    {this.getDialogBody()}
+                    
+                    <div className="dialog-buttons">
+                        {dialogButtons}
+                    </div>
+                </div>
+            </div>
+        );
     }
 
-    close() {
-        this.setState({
-            show: false
-        })
+    componentDidMount() {
+        document.body.appendChild(this.container);
+    }
+
+    componentWillUnmount() {
+        document.body.removeChild(this.container);
     }
 
     render() {
-        if(this.state.show) {
-            return (
-                <div className="dialog-backdrop">
-                    <div className="dialog-box">
-                        <div className="dialog-closer" onClick={this.close.bind(this)}>
-                            x
-                        </div>
-                        <div className="dialog-title">
-                            {this.props.title}
-                        </div>
-                        <div className="dialog-body">
-                            {this.props.body}
-                        </div>
-                        <div className="dialog-buttons">
-                            {this.generateButtons()}
-                        </div>
-                    </div>
-                </div>
-            );
-        } else {
-            return null;
-        }
+        return ReactDOM.createPortal(
+            this.generateDialogLayout(), 
+            this.container
+        );
     }
 }
 
