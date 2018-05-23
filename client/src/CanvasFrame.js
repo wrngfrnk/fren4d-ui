@@ -3,23 +3,44 @@ import {bin2dec, dec2bin} from './Helpers.js';
 import Button from './Button.js';
 import './Frame.css';
 
+const canvasX = 8;
+const canvasY = 8;
+const canvasSize = 300;
+const pixelSize = (300 / 8);
+
 class Canvas extends React.Component {
+    // TODO: Kind of reinventing the wheel here; perhaps a canvas manipulation library would be in order?
     constructor(props) {
         super(props);
 
-        this.state = {
-            pixels: this.props.pixelData,
-            drawMode: true,
-            toDraw: [],
-            updater: true,
-            paintLine: []
-        }
-    }
+        let gfxData = [];
 
-    componentWillReceiveProps(nextProps) {
-        this.setState({
-            pixels: nextProps.pixelData
-        })
+        for(let i = 0; i < canvasX; i++) {
+            let gfxRow = [];
+            for(let j = 0; j < canvasY; j++) {
+                gfxRow.push({
+                    pos: {
+                        center: {
+                            x: j * pixelSize + (pixelSize / 2),
+                            y: i * pixelSize + (pixelSize / 2),
+                        },
+                        origin: {
+                            x: j * pixelSize,
+                            y: i * pixelSize,
+                        }
+                    }
+                })
+            }
+            gfxData.push(gfxRow);
+        }
+
+        this.state = {
+            graphics: gfxData,
+            drawMode: true,
+            drawing: false,
+            toDraw: [],
+            updater: false,
+        }
     }
 
     shouldComponentUpdate(nextProps) {
@@ -44,8 +65,8 @@ class Canvas extends React.Component {
         return pixels;
     }
 
-    fillPixel(ctx, x, y, w, h) {
-        ctx.fillStyle="#ff9922";
+    fillPixel(ctx, x, y, w, h, color = "#ff9922") {
+        ctx.fillStyle=color;
         ctx.fillRect(x, y, w, h);
     }
 
@@ -58,32 +79,26 @@ class Canvas extends React.Component {
         ctx.lineWidth = 3;
         ctx.strokeStyle = "black";
         for(let i = 0; i <= 8; i++) {
-            ctx.moveTo(i * (300 / 8), 0);
-            ctx.lineTo(i * (300 / 8), 300);
+            ctx.moveTo(i * pixelSize, 0);
+            ctx.lineTo(i * pixelSize, canvasSize);
 
-            ctx.moveTo(0, i * (300 / 8));
-            ctx.lineTo(300, i * (300 / 8));
+            ctx.moveTo(0, i * pixelSize);
+            ctx.lineTo(canvasSize, i * pixelSize);
         }
 
-        ctx.stroke();
         ctx.closePath();
-    }
-
-    startDrawStroke(ctx, x, y) {
-        ctx.beginPath();
-        ctx.lineWidth = 2;
-        ctx.strokeStyle = "orange";
-        ctx.moveTo(x, y)
-    }
-
-    paintDrawStroke(ctx, x, y) {
-        ctx.lineTo(x, y);
         ctx.stroke();
-        ctx.moveTo(x, y);
     }
 
-    stopDrawStroke(ctx) {
-        ctx.closePath();
+    markForPainting(ctx, x, y) {
+        let offset = 10;
+        this.fillPixel(
+            ctx, 
+            x + offset,
+            y + offset, 
+            pixelSize - (offset * 2), 
+            pixelSize - (offset * 2), 
+            !this.state.drawMode ? "orange" : "red")
     }
 
     getRelativeMouseLocation(el, x, y) {
@@ -97,17 +112,17 @@ class Canvas extends React.Component {
 
     getPixelByCoords(x, y) {
         return {
-            x: Math.floor((x / 300) * 8), 
-            y: Math.floor((y / 300) * 8)
+            x: Math.floor((x / canvasSize) * canvasX), 
+            y: Math.floor((y / canvasSize) * canvasY)
         }
     }
 
     getPixelActive(x, y) {
-        return dec2bin(this.state.pixels[y])[x] === 1;
+        return dec2bin(this.props.pixelData[y])[x] === 1;
     }
 
     updatePixels() {
-        let newBin = this.state.pixels.map((dec) => {
+        let newBin = this.props.pixelData.map((dec) => {
             return dec2bin(dec)
         });
 
@@ -121,7 +136,7 @@ class Canvas extends React.Component {
 
         for(let i in newBin) {
             newBin[i] = bin2dec(newBin[i]);
-            if(newBin[i] !== this.state.pixels[i]) {
+            if(newBin[i] !== this.props.pixelData[i]) {
                 replaceRows.push({row: i, dec: newBin[i]});
             }
         }
@@ -131,9 +146,8 @@ class Canvas extends React.Component {
         this.setState({
             toDraw: [],
             updater: false,
-        });
+        }, this.forceUpdate());
 
-        this.forceUpdate();
     }
 
     addToDraw(e, x, y, state) {
@@ -147,19 +161,19 @@ class Canvas extends React.Component {
     }
 
     startDraw(e) {
+        // TODO: roll this into the PaintDraw method
         if(e.buttons === 0 || e.button === 0) {
             const clickedLocation = this.getRelativeMouseLocation(e.target, e.clientX, e.clientY);
             const clickedPixel = this.getPixelByCoords(clickedLocation.x, clickedLocation.y);
+            const clickedPixelCenterPos = this.state.graphics[clickedPixel.y][clickedPixel.x].pos.center;
             const pixelIsActive = this.getPixelActive(clickedPixel.x, clickedPixel.y);
             
             this.setState({
                 drawing: true,
                 drawMode: pixelIsActive,
+            }, () => {
+                this.addToDraw(e, clickedPixel.x, clickedPixel.y, pixelIsActive);
             });
-
-            this.startDrawStroke(this.refs[this.props.canvasid].getContext('2d'), clickedLocation.x, clickedLocation.y);
-
-            this.addToDraw(e, clickedPixel.x, clickedPixel.y, pixelIsActive);
         }
     }
 
@@ -167,10 +181,15 @@ class Canvas extends React.Component {
         if(this.state.drawing){
             const hoverLocation = this.getRelativeMouseLocation(e.target, e.clientX, e.clientY);
             const hoverPixel = this.getPixelByCoords(hoverLocation.x, hoverLocation.y);
+            const hoverPixelOriginPos = this.state.graphics[hoverPixel.y][hoverPixel.x].pos.origin;
             
-            this.paintDrawStroke(this.refs[this.props.canvasid].getContext('2d'), hoverLocation.x, hoverLocation.y);
+            this.markForPainting(this.refs[this.props.canvasid].getContext('2d'), hoverPixelOriginPos.x, hoverPixelOriginPos.y);
 
-            this.addToDraw(null, hoverPixel.x, hoverPixel.y, this.state.drawMode);
+            if(!this.state.toDraw.find(px => {
+                return (px.x === hoverPixel.x && px.y === hoverPixel.y) ? true : false
+            })){
+                this.addToDraw(null, hoverPixel.x, hoverPixel.y, this.state.drawMode);
+            }
         }
     }
 
@@ -178,22 +197,20 @@ class Canvas extends React.Component {
         this.setState({
             drawing: false,
             drawMode: false,
-        });
-
-        this.stopDrawStroke(this.refs[this.props.canvasid].getContext('2d'))
-        this.updatePixels();
+        }, this.updatePixels());
     }
 
     updateCanvas() {
         const ctx = this.refs[this.props.canvasid].getContext('2d');
 
-        for(let row in this.state.pixels) {
-            let binRow = dec2bin(this.state.pixels[row]);
+        for(let row in this.props.pixelData) {
+            const binRow = dec2bin(this.props.pixelData[row]);
             for(let p in binRow) {
+                const pxPos = this.state.graphics[row][p].pos.origin;
                 if(binRow[p] === 1){
-                    this.fillPixel(ctx, p * (300 / 8), row * (300 / 8), 300 / 8, 300 / 8);
+                    this.fillPixel(ctx, pxPos.x, pxPos.y, pixelSize, pixelSize);
                 } else {
-                    this.clearPixel(ctx, p * (300 / 8), row * (300 / 8), 300 / 8, 300 / 8);
+                    this.clearPixel(ctx, pxPos.x, pxPos.y, pixelSize, pixelSize);
                 }
             }
         }
@@ -207,8 +224,8 @@ class Canvas extends React.Component {
                 ref={this.props.canvasid} 
                 className="frame-grid" 
                 id={this.props.canvasid}
-                height="300" 
-                width="300"
+                height={canvasSize}
+                width={canvasSize}
                 onMouseDown={e => this.startDraw(e)}
                 onMouseMove={e => this.paintDraw(e)}
                 onMouseUp={() => this.applyDraw()}
