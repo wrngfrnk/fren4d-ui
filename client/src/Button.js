@@ -9,7 +9,7 @@ class Button extends React.Component {
     render() {
         let classes = this.props.buttonClass !== undefined ? this.props.buttonClass : '';
         return (
-            <button disabled={this.props.disabled} className={"Button " + classes} onClick={this.props.action}>{this.props.text}</button>
+            <button disabled={this.props.disabled} className={"Button " + classes} onClick={() => this.props.action(this.props.callback || null)}>{this.props.text}</button>
         );
     }
 }
