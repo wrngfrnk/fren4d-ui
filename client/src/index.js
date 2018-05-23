@@ -12,6 +12,56 @@ import CanvasFrame from './CanvasFrame.js';
 // TODO: Saving/loading to JSON
 // TODO: Integrate with robot!
 
+class Filename extends React.PureComponent {
+    constructor(props) {
+        super(props);
+        this.shouldUpdateName = this.shouldUpdateName.bind(this)
+
+        this.state = {
+            focus: false,
+            timeout: null
+        }
+    }
+
+    shouldUpdateName(newName) {
+        // Use a timeout to wait for 500ms of no input before updating the name
+        clearTimeout(this.state.timeout);
+        const updateTimeout = setTimeout(() => {
+            this.setState({
+                newName: newName
+            }, this.setNewName())
+            return true;
+        }, 500);
+
+        this.setState({
+            timeout: updateTimeout,
+        }, () => false);
+    }
+
+    setNewName() {
+        console.log('Updating name')
+        return (() => this.props.action(this.state.newName !== '' ? this.state.newName : 'animation'))
+    }
+
+    render() {
+        return (
+            <div className="animation-name">
+                {!this.state.focus && (<div onClick={() => this.setState({focus: true})}>{this.props.currentName || 'name'}.json</div>)}
+                {this.state.focus && (
+                    <input autoFocus
+                        className="nameinput"
+                        width="auto"
+                        onBlur={() => this.setState({focus: false})} 
+                        onFocus={e => {e.target.value = this.props.currentName; e.target.select()}}
+                        onInput={e => this.shouldUpdateName(e.target.value)} 
+                        onKeyDown={(e) => (e.key === 'Enter') ? this.setState({focus: false}) : null} 
+                    />
+                )}
+            </div>
+        );
+    }
+}
+
 class App extends React.Component {
     // TODO: Let this handle currentFrame, frameTime
     constructor(props) {
@@ -21,9 +71,13 @@ class App extends React.Component {
         this.previewAnim = this.previewAnim.bind(this);
         this.updateFrame = this.updateFrame.bind(this);
         this.saveAnimation = this.saveAnimation.bind(this);
+        this.loadAnimation = this.loadAnimation.bind(this);
+        this.setFileToLoad = this.setFileToLoad.bind(this);
+        this.openDialogPortal = this.openDialogPortal.bind(this);
 
         this.state = {
             animation: {
+                name: '',
                 frames: [{
                     frameDataL: [],
                     frameDataR: [],
@@ -32,14 +86,37 @@ class App extends React.Component {
                 mood: []
             },
             currentFrame: 0,
+            showDialog: false,
+            currentDialog: '',
+            dialogData: {}
         }
     }
 
-    componentDidMount() { // Get initial data
-        fetch('/frame/load/test') // TODO: Some way to handle left vs right eye (SAme graphic? Mirrored? Completely separated?)
-            .then(res => res.json())
-            .then(res => this.setState({ animation: res.animation }));
+    componentDidMount() {
+        let loadFilename = this.state.animation.name || 'test';
+
+        this.newAnimation();
     }
+
+    openDialogPortal(dialog = '', {...dialogData}) {
+        console.log("Pappa?")
+        this.setState({
+            showDialog: true,
+            currentDialog: dialog,
+            dialogData: dialogData
+        });
+    }
+
+    closeDialogPortal() {
+        this.setState({
+            showDialog: false,
+        })
+    }
+
+    
+    // -----
+    // Frame management methods
+    // -----
 
     getLength() {
         return this.state.animation.frames.length;
@@ -60,17 +137,18 @@ class App extends React.Component {
         return nextFrame;
    }
 
-    addFrame(newData = {frameDataL: Array(8).fill(0), frameDataR: Array(8).fill(0), frameTime: 1000}) {
+    addFrame(newData = {frameDataL: Array(8).fill(0), frameDataR: Array(8).fill(0), frameTime: 100}) {
         let newFrames = [
             ...this.state.animation.frames.slice(0, this.state.currentFrame + 1).concat(newData),
             ...this.state.animation.frames.slice(this.state.currentFrame + 1, this.getLength())
         ]
 
-        this.setState({
+        this.setState(prevState => ({
             animation: {
+                ...prevState.animation,
                 frames: newFrames
             }
-        })
+        }));
 
         setTimeout(() => {
             this.setCurrentFrame(this.nextFrame())
@@ -85,6 +163,15 @@ class App extends React.Component {
         return this.addFrame(template)
     }
 
+    duplicateAnimation() {
+        this.setState(prevState => ({
+            animation: {
+                ...prevState.animation,
+                frames: JSON.parse(JSON.stringify(prevState.animation.frames.concat(prevState.animation.frames)))
+            }
+        }));
+    }
+
     deleteFrame() {
         let newFrames = [...this.state.animation.frames.slice(0, this.state.currentFrame), ...this.state.animation.frames.slice(this.state.currentFrame + 1, this.state.animation.frames.length)];
 
@@ -92,11 +179,12 @@ class App extends React.Component {
             this.setCurrentFrame(this.prevFrame());
         }
 
-        this.setState({
+        this.setState(prevState => ({
             animation: {
+                ...prevState.animation,
                 frames: newFrames
             }
-        });
+        }));
     }
 
     updateFrame(eye, data) {
@@ -105,22 +193,24 @@ class App extends React.Component {
         
         newFrame[this.state.currentFrame][targetEye] = data;
 
-        this.setState({
+        this.setState(prevState => ({
             animation: {
+                ...prevState.animation,
                 frames: newFrame
             }
-        });
+        }));
     }
 
     updateFrameTime(val) {
         let newFrame = this.state.animation.frames;
         newFrame[this.state.currentFrame].frameTime = val;
 
-        this.setState({
+        this.setState(prevState => ({
             animation: {
+                ...prevState.animation,
                 frames: newFrame
             }
-        });
+        }));
     }
 
     copyLR(eye = 0) {
@@ -129,6 +219,11 @@ class App extends React.Component {
 
         this.updateFrame(eye, newEye);
     }
+
+
+    // ------
+    // Animation management methods
+    // ------
 
     previewAnim() {
         if(!this.state.previewing) {
@@ -155,8 +250,51 @@ class App extends React.Component {
         }
     }
 
-    saveAnimation() {
-        const url = '/frame/save/test';
+    setFilename(filename) {
+        this.setState(prevState => ({
+            animation: {
+                ...prevState.animation,
+                name: filename
+            }
+        }));
+    }
+
+    newAnimation() {
+        this.setState({
+            animation: {
+                frames: [
+                    {
+                        frameDataL: Array(8).fill(0),
+                        frameDataR: Array(8).fill(0),
+                        frameTime: 100
+                    },
+                ],
+                name: 'new_animation',
+                mood: [],
+            },
+            currentFrame: 0
+        });
+    }
+
+    setFileToLoad(filename) {
+        if(filename !== undefined) {
+            this.setState({
+                fileToLoad: filename
+            });
+        }
+    }
+
+    loadAnimation(callback = null, filename = this.state.fileToLoad) {
+        console.log("Loading file", filename)
+        fetch('/frame/load/' + filename)
+        .then(res => res.json())
+        .then(res => this.setState({ animation: {
+            ...res.animation 
+        }}, callback));
+    }
+
+    saveAnimation(callback = null, filename = this.state.animation.name) {
+        const url = '/frame/save/' + filename;
         const data = this.state.animation;
 
         fetch(url, {
@@ -166,24 +304,61 @@ class App extends React.Component {
             'Content-Type': 'application/json'
           }),
         }).then(console.log("Saved it, probably."))
-    }
-
-    openDialog(title, body, actions, callback) {
-        this.setState({
-            dialogActive: true
-        });
+        .then(callback);
     }
 
     render() {
         return (
             <div id="wrapper">
-                {(this.state.dialogActive) ? <Dialog show={true} title="Test" body="Test dialog." /> : null}
+                {this.state.showDialog && (
+                    <Dialog template={this.state.currentDialog} dialogData={this.state.dialogData} closeAction={this.closeDialogPortal.bind(this)}/>
+                )}
+
                 {this.state.previewing ? <div id="previewing">PREVIEWING...</div> : null}
+
                 <Sidebar />
-                <Button
-                    action={() => this.saveAnimation()}
-                    text="Save animation"
+
+                <Filename action={this.setFilename.bind(this)} currentName={this.state.animation.name} />
+                
+                <Button 
+                    action={this.newAnimation.bind(this)}
+                    text="New Animation"
                 />
+
+                <Button
+                    action={() => this.openDialogPortal('load', {
+                        title: "Load animation",
+                        loadAction: this.setFileToLoad,
+                        actions: [
+                            {
+                                label: 'Load',
+                                func: this.loadAnimation
+                            },{
+                                label: 'Cancel',
+                                func: this.closeDialogPortal.bind(this)
+                            }
+                        ]
+                    })}
+                    text="Load animation"
+                />
+                
+                <Button
+                    action={() => this.openDialogPortal('save', {
+                        title: "Save animation",
+                        filename: this.state.animation.name,
+                        actions: [
+                            {
+                                label: 'Save',
+                                func: this.saveAnimation
+                            },{
+                                label: 'Cancel',
+                                func: this.closeDialogPortal.bind(this)
+                            }
+                        ]
+                    })}
+                    text={"Save animation"}
+                />
+
                 <div className="frame-change">
                     <Button 
                         action={() => this.setCurrentFrame(this.prevFrame())} 
@@ -213,6 +388,10 @@ class App extends React.Component {
                         action={() => this.deleteFrame()} 
                         text="Delete frame"
                         disabled={this.state.animation.frames.length <= 1}
+                    />
+                    <Button 
+                        action={() => this.duplicateAnimation()} 
+                        text="Duplicate Animation"
                     />
                 </div>
                 <Button action={this.previewAnim} text="Preview Animation"  />
