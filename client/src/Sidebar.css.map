@@ -4,6 +4,6 @@
 	"sources": [
 		"Sidebar.scss"
 	],
-	"mappings": "",
+	"mappings": "AAAA,AACI,QADI,CACJ,EAAE,AAAC,CACC,MAAM,CAAE,iBAAkB,CAC1B,OAAO,CAAE,OAAQ,CACpB",
 	"names": []
 }
