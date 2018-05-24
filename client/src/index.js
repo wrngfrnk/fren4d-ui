@@ -39,7 +39,6 @@ class Filename extends React.PureComponent {
     }
 
     setNewName() {
-        console.log('Updating name')
         return (() => this.props.action(this.state.newName !== '' ? this.state.newName : 'animation'))
     }
 
@@ -93,13 +92,10 @@ class App extends React.Component {
     }
 
     componentDidMount() {
-        let loadFilename = this.state.animation.name || 'test';
-
         this.newAnimation();
     }
 
-    openDialogPortal(dialog = '', {...dialogData}) {
-        console.log("Pappa?")
+    openDialogPortal(dialog = '', {...dialogData}) { // 
         this.setState({
             showDialog: true,
             currentDialog: dialog,
@@ -152,13 +148,13 @@ class App extends React.Component {
 
         setTimeout(() => {
             this.setCurrentFrame(this.nextFrame())
-        }, 10); // Ugly hack to wait for the state to be set before proceeding to the next frame.
+        }, 10); // TODO: Ugly hack to wait for the state to be set before proceeding to the next frame. Fix this.
     }
 
     duplicateFrame() {
         let template = JSON.parse(JSON.stringify(
             this.state.animation.frames.slice(this.state.currentFrame, this.state.currentFrame + 1)[0]
-        )); // Ugly hack to deep copy template data
+        )); // TODO: Ugly hack to deep copy template data; immutable.js would probably remedy this
         
         return this.addFrame(template)
     }
@@ -276,6 +272,9 @@ class App extends React.Component {
         });
     }
 
+    // TODO: The file loading functions are getting pretty messy at this point. 
+    // It would be a solid idea to Reduxify this if the rabbit hole goes any deeper.
+
     setFileToLoad(filename) {
         if(filename !== undefined) {
             this.setState({
@@ -285,7 +284,6 @@ class App extends React.Component {
     }
 
     loadAnimation(callback = null, filename = this.state.fileToLoad) {
-        console.log("Loading file", filename)
         fetch('/frame/load/' + filename)
         .then(res => res.json())
         .then(res => this.setState({ animation: {
@@ -306,6 +304,8 @@ class App extends React.Component {
         }).then(console.log("Saved it, probably."))
         .then(callback);
     }
+
+    // ----
 
     render() {
         return (
