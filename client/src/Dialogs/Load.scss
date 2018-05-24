@@ -8,6 +8,7 @@
     .file-line {
         cursor: pointer;
         padding: 4px;
+        user-select: none;
 
         &.selected {
             background: #44DD00;

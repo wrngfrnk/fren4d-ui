@@ -20,9 +20,8 @@ class Dialog extends React.PureComponent {
                 return <SaveDialog filename={this.props.dialogData.filename || 'NO NAME'} />
             case 'load':
                 return <LoadDialog loadAction={this.props.dialogData.loadAction.bind(this)} closeAction={this.props.closeAction}/>
-
             default:
-                return "EWWOW!! LOOKS LIKE WE MADE A LIL OOPSIE WOOPSIE FUCKY WUCKY OwO";
+                return;
         }
     }
 
