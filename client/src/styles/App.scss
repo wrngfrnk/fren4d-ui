@@ -1,0 +1,28 @@
+#animation-name {
+    .name-value {
+        cursor: pointer;
+    }
+
+    .name-input {
+        background: none;
+        border: none;
+        padding: 0;
+        margin: 0;
+        
+        font-size: 95%;
+    }
+
+    height: 20px;
+}
+
+#animation-mood {
+    margin-bottom: 10px;
+}
+
+#animation-controls {
+    grid-area: controls;
+}
+
+.control-group {
+    margin-bottom: 4px;
+}

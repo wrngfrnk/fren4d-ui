@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import Loader from './../Loader.js';
+import Loader from './../components/Loader.js';
 
 import './Load.css';
 
@@ -32,7 +32,10 @@ class FileManager extends Component {
 
         this.setState(prevState => ({
             selectedFile: newFile
-        }), this.props.action(this.state.files[i]));
+        }), () => {
+            this.props.clickAction(this.state.files[i]);
+        });
+
     }
 
     render() {
@@ -44,8 +47,7 @@ class FileManager extends Component {
                             <li 
                                 className={"file-line" + '' + (i === this.state.selectedFile ? ' selected' : '')}
                                 key={"file-" + i} 
-                                onMouseDown={() => this.selectFile(i)}
-                            >
+                                onClick={() => this.selectFile(i)}                            >
                                 {file}
                             </li>
                         );
@@ -66,7 +68,7 @@ class LoadDialog extends Component {
     render() {
         return (
             <div>
-                <FileManager action={this.setFileToLoad.bind(this)} />
+                <FileManager clickAction={this.setFileToLoad.bind(this)} />
             </div>
         );
     }

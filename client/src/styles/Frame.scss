@@ -1,0 +1,99 @@
+#frames {
+    grid-area: frame;
+
+    display: grid;
+    grid-template-rows: auto;
+    grid-template-columns: 340px auto 340px;
+    grid-template-areas: "frame-l . frame-r";
+
+    .frame {
+        &:first-child {
+            justify-self: start;
+            grid-area: frame-l;
+        }
+
+        &:last-child {
+            justify-self: end;
+            grid-area: frame-r;
+        }
+    }
+
+    .frame-container {
+        display: grid;
+        grid-template-columns: 20px 300px 20px;
+        grid-template-rows: 20px 300px 20px;
+
+        .frame-grid {
+            background: #333;
+
+            grid-column: 2 / 2;
+            grid-row: 2 / 2;
+            
+            height: 100%;
+            width: 100%;
+
+            .pixel-row {
+                height: 12.5%;
+
+                .pixel {
+                    height: 100%;
+                    width: 12.5%;
+                    background: grey;
+                    border: 1px solid black;
+                    border-collapse: collapse;
+
+                    transition: background 150ms;
+
+                    &.active {
+                        background: orange;
+                    }
+                }    
+            }
+
+        }
+
+        .frame-shift {
+            margin: 0;
+
+            &.up {
+                grid-column: 2 / 2;
+                grid-row: 1 / 1;
+            }
+
+            &.down {
+                grid-column: 2 / 2;
+                grid-row: 3 / 3;
+            }
+
+            &.left {
+                grid-column: 1 / 1;
+                grid-row: 2 / 2;
+            }
+
+            &.right {
+                grid-column: 3 / 3;
+                grid-row: 2 / 2;
+            }
+        }
+    }
+
+    .frame-controls {
+        display: grid;
+        grid-template-rows: auto;
+        grid-template-columns: repeat(8, auto);
+        grid-gap: 0 6px;
+        margin-bottom: 7px;
+
+        button {
+            width: 35px;
+
+            font-size: 200%;
+
+            white-space:nowrap;
+            padding: 0 0 2px 0;
+            margin: 0;
+
+            justify-self: center;
+        }
+    }
+}
